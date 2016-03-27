@@ -5,7 +5,7 @@
 # Author: Steve Bickerton
 # Email: bick@astro.princeton.edu
 # Date: Tue 2009-10-20 14:36:37
-# 
+#
 # Summary:
 #
 # This program is intended to run style.py on a series of 'test files'
@@ -13,7 +13,7 @@
 # I takes no command line arguments or options.
 #
 # Usage: test-style.py
-# 
+#
 """
 %prog [options]
 """
@@ -26,7 +26,10 @@ import datetime
 import glob
 import commands
 
-def red(s):   return "\033[31;1m " + s + " \033[0m"
+
+def red(s): return "\033[31;1m " + s + " \033[0m"
+
+
 def green(s): return "\033[32;1m " + s + " \033[0m"
 
 #############################################################
@@ -35,16 +38,17 @@ def green(s): return "\033[32;1m " + s + " \033[0m"
 #
 #############################################################
 
+
 def main():
 
     ########################################################################
     # command line arguments and options
     ########################################################################
-    
+
     parser = optparse.OptionParser(usage = __doc__)
-    #parser.add_option("-a", "--aa", dest = "aa", type = float,
+    # parser.add_option("-a", "--aa", dest = "aa", type = float,
     #                  default = 1.0, help="default = %default")
-    
+
     opts, args = parser.parse_args()
 
     styleDataDir = os.getenv("LSST_DIR") + "/tests/styleData"
@@ -64,7 +68,6 @@ def main():
         #testFiles = glob.glob(styleDataDir + "/test3-1.cc")
         testFiles.sort()
 
-        
     for testFile in testFiles:
 
         #######################################################
@@ -82,13 +85,13 @@ def main():
                 code = m.group(1)
                 expectedFailures[code] = m.group(2).split(",")
                 expFailExplanations[code] = m.group(3)
-                
+
         #######################################################
         # run style.py on the test file and collect failures
         cmd = "style.py " + testFile
         status, output = commands.getstatusoutput(cmd)
         failureList = output.split("\n")
-        
+
         detectedFailures = {}
         detFailExplanations = {}
         for failure in failureList:
@@ -96,12 +99,11 @@ def main():
             if m:
                 lineNo = m.group(1)
                 detFailExplanations[code] = m.group(2)
-                code   = m.group(3)
+                code = m.group(3)
                 if (detectedFailures.has_key(code)):
                     detectedFailures[code].append(lineNo)
                 else:
                     detectedFailures[code] = [lineNo]
-
 
         #######################################################
         # make sure the output is consistent with expected
@@ -111,16 +113,16 @@ def main():
             for lineNo in detectedFailures[code]:
                 if (not expectedFailures.has_key(code) or not lineNo in expectedFailures[code]):
                     falsePositives.append([lineNo, code, detFailExplanations[code]])
-                
+
         falseNegatives = []
         for code in expectedFailures:
             for lineNo in expectedFailures[code]:
                 if (not detectedFailures.has_key(code) or not lineNo in detectedFailures[code]):
                     falseNegatives.append([lineNo, code, expFailExplanations[code]])
 
-        #print "detected: ", detectedFailures["3-1"]
-        #print "expected: ", expectedFailures["3-1"]
-                    
+        # print "detected: ", detectedFailures["3-1"]
+        # print "expected: ", expectedFailures["3-1"]
+
         #######################################################
         # output
         print "%-24s " % (os.path.basename(testFile)),

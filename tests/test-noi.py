@@ -2,7 +2,7 @@
 #
 # Author: Steven Bickerton
 # Date: Sun 2010-10-03 15:58:47
-# 
+#
 """
 %prog [options]
 """
@@ -22,6 +22,7 @@ import os
 sys.path.append(os.path.join(os.getenv("LSST_DIR"), "scripts"))
 import noI
 
+
 def main():
 
     noiData = os.path.join(os.getenv("LSST_DIR"), "tests", "noIData", "*.stderr")
@@ -36,14 +37,13 @@ def main():
             sys.stdout.close()
             sys.stdout = sout
             print "Succeeded: ", errorMsgFile
-        except Exception,e:
+        except Exception, e:
             sys.stdout.close()
             sys.stdout = sout
             print "Failed: ", errorMsgFile, e
             pass
         fp.close()
 
-        
 
 #############################################################
 # end
@@ -54,12 +54,12 @@ if __name__ == '__main__':
     ########################################################################
     # command line arguments and options
     ########################################################################
-    
+
     parser = optparse.OptionParser(usage=__doc__)
     opts, args = parser.parse_args()
 
     if len(args) != 0:
         parser.print_help()
         sys.exit(1)
-    
+
     main()

@@ -3,11 +3,11 @@
 # Original filename: noI.py
 #
 # Author: Steve Bickerton
-# Email: 
+# Email:
 # Date: Mon 2009-12-21 09:41:24
-# 
-# Summary: 
-# 
+#
+# Summary:
+#
 """
 %prog [options]
 """
@@ -23,11 +23,11 @@ import glob
 # A function which prints the terminal code to set color/style of text
 ##########################
 def color(col):
-    c = {"red":31, "green":32, "yellow":33, "blue":34, "magenta":35, "cyan":36, "reset":0}
-    s = {"bold":1}
+    c = {"red": 31, "green": 32, "yellow": 33, "blue": 34, "magenta": 35, "cyan": 36, "reset": 0}
+    s = {"bold": 1}
 
     base = "\033["
-    out = 0 # default to 'reset'
+    out = 0  # default to 'reset'
     if col in c:
         out = c[col]
     elif col in s:
@@ -37,6 +37,8 @@ def color(col):
 ############################
 # A function which searches for a pattern and colors/styles a captured portion of it.
 # ##########################
+
+
 def regexColorReplace(regex, clrs, line):
     m = re.search(regex, line)
     out = line
@@ -55,7 +57,7 @@ def regexColorReplace(regex, clrs, line):
             out = re.sub(":"+pattern, ":"+colorPattern, line)
         else:
             out = re.sub(pattern, colorPattern, line)
-            
+
     return out, found
 
 
@@ -69,7 +71,7 @@ def main(filedesc, log, retryscript):
     if log:
         fp_log = open("noI.log", 'w')
         fp_warn = open("noI.warn", 'w')
-        
+
     ####################################
     # loop over stdin lines
     ####################################
@@ -81,7 +83,7 @@ def main(filedesc, log, retryscript):
     fp = open(retryscript, 'w')
     fp.write(s)
     fp.close()
-    
+
     i = 0
     nWarning = 0
     compile_lines = {}  # store the compile statement by path of the .cc file
@@ -94,20 +96,20 @@ def main(filedesc, log, retryscript):
     iLine = 0
     while(True):
         line = filedesc.readline()
-        
+
         raw_line = line
         if log:
             fp_log.write(raw_line)
 
         raw_lines.append(raw_line)
         iLine += 1
-        
+
         if not line:
             break
 
         # trim the g++ options (-I -L etc.)
         line = re.sub("\s+-([DILl]|Wl,)\S+", "", line)
-        
+
         # stash the line if it's a compile statement (starts with 'g++')
         # POSSIBLE BUG if another compiler is used.
         if re.search("^g\+\+", raw_line):
@@ -115,10 +117,10 @@ def main(filedesc, log, retryscript):
             srcFileList.append(srcFile)
             compile_lines[srcFile] = raw_line.strip()
             srcFileLookup[srcFile] = srcFile
-            
+
         ### warnings ###
         line, foundwarn = regexColorReplace("([Ww]arning):", ["yellow"], line)
-        
+
         ### errors ###
 
         # write a script to re-execute the compile statement which failed
@@ -126,17 +128,16 @@ def main(filedesc, log, retryscript):
         m = re.search("^([^:]+):(\d+): error:", line)
         if m:
             errFile = m.groups()[0]
-            
-            # if a .h file, need to get the corresponding .cc file 
+
+            # if a .h file, need to get the corresponding .cc file
             if re.search("\.h$", errFile):
 
                 ##########
                 # need to check two possibilities
 
-                
                 # - .h file included directly in a .cc (it'll be listed on the previous line)
                 mm = re.search("^In file included from ([^:]+.cc):(\d+):", raw_lines[iLine-2])
-                
+
                 # - .h file included from a chain of .h
                 # (.cc which includes the first in the chain will be on a recent line ... different regex)
                 mm2 = False
@@ -146,7 +147,6 @@ def main(filedesc, log, retryscript):
                     mm2 = re.search("^\s+from ([^:]+.cc):(\d+):", raw_lines[iLine-2-iL])
                     iL += 1
 
-                    
                 ##########
                 # now get the appropriate src file for this header error
                 if mm:
@@ -161,25 +161,25 @@ def main(filedesc, log, retryscript):
                     while (iCheck < maxCheck):
                         if len(srcFileList) < iCheck:
                             break
-                        
+
                         srcFile = srcFileList[-iCheck]
                         srcPattern = re.sub(".cc$", "", srcFile)
-                        possibleObjFiles = glob.glob(srcPattern+".*") #{o,os,so}")
+                        possibleObjFiles = glob.glob(srcPattern+".*")  # {o,os,so}")
                         possibleObjFiles = filter(lambda x: re.search(".(o|os|so)$", x), possibleObjFiles)
-                            
-                        #if it built
+
+                        # if it built
                         if len(possibleObjFiles) == 0:
                             srcFileLookup[errFile] = srcFile
                             break
-                        
+
                         iCheck += 1
 
             if not srcFileLookup.has_key(errFile):
                 mesg, found = regexColorReplace("(.*)", ["red"],
-                                                "Can't associate "+errFile+
+                                                "Can't associate "+errFile +
                                                 " with a .cc file build.  No entry in build script.")
                 print mesg
-                
+
             else:
                 srcFile = srcFileLookup[errFile]
                 if not already_compiling.has_key(srcFile):
@@ -192,17 +192,15 @@ def main(filedesc, log, retryscript):
 
                     # the rebuild script should echo what it's doing and do it.
                     s += "echo \"" + compile_line + "\"\n"
-                    s += compile_line + "\n"  #" 2>&1 | " + sys.argv[0] + "\n"
+                    s += compile_line + "\n"  # " 2>&1 | " + sys.argv[0] + "\n"
 
-
-                    
         # highlight the text after searching for 'error' in the line
         # (highlighting inserts extra characters)
         line, found = regexColorReplace("([Ee]rror):", ["red", "bold"], line)
-        
+
         ### filenames ###
         line, found = regexColorReplace(r'\/?(\w+\.(?:cc|h|i|hpp)):\d+[,:]', ["cyan"], line)
-        
+
         ### file linenumbers ###
         # don't try to match the filename too, it's now wrapped in \esc for cyan
         line, found = regexColorReplace(':(\d+)[,:]', ["magenta"], line)
@@ -214,20 +212,18 @@ def main(filedesc, log, retryscript):
         ### yes/no ###
         line, found = regexColorReplace("(?:\.\.\. ?|\(cached\) ?)(yes)\n", ["green"], line)
         line, found = regexColorReplace("(?:\.\.\. ?|\(cached\) ?)(no)\n", ["red", "bold"], line)
-        
-        # add a line number to the output and make it bold
-        line = "==" +str(i)+ "== " + line
 
-        
+        # add a line number to the output and make it bold
+        line = "==" + str(i) + "== " + line
+
         # log the warning here, so we get the color markup and line number
         if foundwarn:
             nWarning += 1
             if log:
                 fp_warn.write(line)
 
-                
         prev_line = raw_line
-        
+
         sys.stdout.write(line)
         sys.stdout.flush()
 
@@ -235,17 +231,17 @@ def main(filedesc, log, retryscript):
 
     warnyellow = color("yellow") + "warnings" + color("reset")
     print "There were %d %s (run with -l and see noI.warn)." % (nWarning, warnyellow)
-    
+
     if len(s) > 0:
         fp = open(retryscript, 'w')
         fp.write(s)
         fp.close()
         os.chmod(retryscript, 0744)
-        
+
     if log:
         fp_log.close()
         fp_warn.close()
-        
+
 #############################################################
 # end
 #############################################################
@@ -265,5 +261,5 @@ if __name__ == '__main__':
     if len(args) > 0:
         parser.print_help()
         sys.exit(1)
-    
+
     main(sys.stdin, opts.log, opts.retryscript)
